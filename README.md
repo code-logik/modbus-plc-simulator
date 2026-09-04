@@ -42,32 +42,49 @@ The public edition describes the architecture and engineering approach using syn
 
 ## Architecture
 
-```text
-                    Local Operator Interface
-                            |
-                            v
-                   Local Control Channel
-                            |
-                            v
-+------------------- Simulation Appliance -------------------+
-|                                                            |
-|  Definition Model --> Simulation Engine --> Register Store  |
-|                                           |                |
-|                                           v                |
-|                                    Modbus/TCP Server       |
-|                                           |                |
-+-------------------------------------------|----------------+
-                                            |
-                                            v
-                                  External Test Client
-                               HMI / Firewall / Test Tool
+```mermaid
+flowchart LR
+    CLIENTS["HMI / Firewall / Test Clients"]
+
+    subgraph APPLIANCE["Debian PLC Simulator Appliance"]
+        CONFIG["JSON Configuration"]
+        REGISTERS["Typed Register Model / Datastore"]
+        ENGINE["Simulation Engine<br/>Process Behaviors"]
+        MODBUS["PyModbus TCP Server"]
+        SOCKET["Unix-Domain<br/>Control Socket"]
+        GUI["Tkinter / X11<br/>Operator Interface"]
+        LOGGING["Transaction Logging<br/>& Observability"]
+        SYSTEMD["systemd Supervision"]
+
+        CONFIG --> REGISTERS
+        ENGINE --> REGISTERS
+
+        MODBUS <--> REGISTERS
+
+        GUI <--> SOCKET
+        SOCKET <--> REGISTERS
+
+        MODBUS --> LOGGING
+
+        SYSTEMD -. supervises .-> MODBUS
+        SYSTEMD -. supervises .-> GUI
+    end
+
+    CLIENTS <-->|Modbus/TCP| MODBUS
 ```
 
-The design separates three concerns:
+The architecture separates three primary concerns:
 
-1. **Register definition** — which simulated points and addresses exist.
-2. **Simulation behavior** — how values change during a test.
-3. **Protocol access** — how external Modbus clients interact with the simulated datastore.
+- **Register definition** — the PLC register model and datastore
+- **Simulation behavior** — controlled changes to simulated process values
+- **Protocol access** — external Modbus/TCP clients interacting with the simulated PLC
+
+The operator interface communicates with the running simulator through a local
+Unix-domain control socket rather than exposing another network service.
+
+Transaction logging is focused on genuine Modbus/TCP client activity so that
+internal GUI inspection and control operations do not pollute protocol-level
+observability.
 
 ## Simulation Behaviors
 
