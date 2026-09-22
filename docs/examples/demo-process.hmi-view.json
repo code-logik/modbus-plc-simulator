@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "hmi_view",
+  "name": "Demo Process View",
+  "description": "Synthetic illustration; not a real PLC mapping.",
+  "tags": [
+    "DEMO_PRESSURE",
+    "DEMO_TEMPERATURE",
+    "DEMO_RUN_STATE"
+  ]
+}
